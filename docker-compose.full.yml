@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Servidor Firebird
+  firebird:
+    image: jacobalberty/firebird:latest
+    container_name: firebird-server
+    restart: unless-stopped
+    environment:
+      - ISC_PASSWORD=${FIREBIRD_PASSWORD:-masterkey}
+      - FIREBIRD_DATABASE=${FIREBIRD_DATABASE:-pirajanet.fdb}
+      - FIREBIRD_USER=${FIREBIRD_USER:-SYSDBA}
+    ports:
+      - "3050:3050"
+    volumes:
+      - firebird-data:/firebird/data
+      - firebird-system:/firebird/system
+    networks:
+      - firebird-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'SELECT 1 FROM RDB$$DATABASE;' | /usr/local/firebird/bin/isql -user sysdba -password $${ISC_PASSWORD} localhost:employee"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API REST
+  firebird-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: firebird-api:latest
+    container_name: firebird-api
+    restart: unless-stopped
+    depends_on:
+      firebird:
+        condition: service_healthy
+    ports:
+      - "3051:3050"  # API na porta 3051 para não conflitar
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=firebird
+      - DB_PORT=3050
+      - DB_PATH=/firebird/data/${FIREBIRD_DATABASE:-pirajanet.fdb}
+      - DB_USER=${FIREBIRD_USER:-SYSDBA}
+      - DB_PASSWORD=${FIREBIRD_PASSWORD:-masterkey}
+      - API_PORT=3050
+    networks:
+      - firebird-network
+    volumes:
+      - ./logs:/usr/src/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3050/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  firebird-network:
+    driver: bridge
+
+volumes:
+  firebird-data:
+    driver: local
+  firebird-system:
+    driver: local
