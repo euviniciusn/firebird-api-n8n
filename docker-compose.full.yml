@@ -25,36 +25,60 @@ services:
 
   # API REST
   firebird-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: firebird-api:latest
+    image: node:18-alpine
     container_name: firebird-api
     restart: unless-stopped
+    working_dir: /usr/src/app
     depends_on:
       firebird:
         condition: service_healthy
     ports:
-      - "3051:3050"  # API na porta 3051 para não conflitar
+      - "3051:3050"
     environment:
       - NODE_ENV=production
       - DB_HOST=firebird
       - DB_PORT=3050
-      - DB_PATH=/firebird/data/${FIREBIRD_DATABASE:-pirajanet.fdb}
-      - DB_USER=${FIREBIRD_USER:-SYSDBA}
-      - DB_PASSWORD=${FIREBIRD_PASSWORD:-masterkey}
+      - DB_PATH=/firebird/data/${FIREBIRD_DATABASE:-nfautopecas.fdb}
+      - DB_USER=${API_USER:-VECTA}
+      - DB_PASSWORD=${API_PASSWORD:-vecta123}
       - API_PORT=3050
     networks:
       - firebird-network
     volumes:
       - ./logs:/usr/src/app/logs
+      - api-node-modules:/usr/src/app/node_modules
+    command: >
+      sh -c "
+      echo '📦 Criando package.json...' &&
+      cat > package.json << 'EOF'
+      {
+        \"name\": \"firebird-api-n8n\",
+        \"version\": \"1.0.0\",
+        \"description\": \"API REST para Firebird\",
+        \"main\": \"server.js\",
+        \"dependencies\": {
+          \"express\": \"^4.18.2\",
+          \"node-firebird\": \"^1.1.8\",
+          \"body-parser\": \"^1.20.2\",
+          \"cors\": \"^2.8.5\",
+          \"dotenv\": \"^16.3.1\"
+        }
+      }
+      EOF
+      echo '📝 Criando server.js...' &&
+      wget -q https://raw.githubusercontent.com/SEU-USUARIO/firebird-api-n8n/main/server.js -O server.js &&
+      echo '📦 Instalando dependências...' &&
+      npm install --production &&
+      echo '🚀 Iniciando API...' &&
+      node server.js
+      "
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3050/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-
+      start_period: 60s
+      
 networks:
   firebird-network:
     driver: bridge
@@ -63,4 +87,6 @@ volumes:
   firebird-data:
     driver: local
   firebird-system:
+    driver: local
+  api-node-modules:
     driver: local
