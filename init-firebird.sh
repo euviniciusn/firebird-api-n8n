@@ -118,7 +118,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # if [ -f "/docker-entrypoint-initdb.d/init.sql" ]; then
 #     echo "📄 Executando script SQL inicial..."
 #     /usr/local/firebird/bin/isql -user SYSDBA -password "$SYSDBA_PASSWORD" \
-#         localhost:/firebird/data/${FIREBIRD_DATABASE:-pirajanet.fdb} \
+#         localhost:/firebird/data/${FIREBIRD_DATABASE:-vecta.fdb} \
 #         -input /docker-entrypoint-initdb.d/init.sql
 #     echo "✅ Script SQL executado com sucesso!"
 # fi
@@ -135,14 +135,14 @@ echo "🎉 Configuração do Firebird concluída com sucesso!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📊 Resumo:"
-echo "  • Banco de dados: ${FIREBIRD_DATABASE:-pirajanet.fdb}"
+echo "  • Banco de dados: ${FIREBIRD_DATABASE:-vecta.fdb}"
 echo "  • Usuário ADMIN: $CUSTOM_USER"
 echo "  • Usuário READONLY: $READONLY_USER"
 echo "  • Porta: 3050"
 echo ""
 echo "🔗 Para conectar:"
 echo "  Host: firebird (dentro do Docker) ou localhost:3050 (externo)"
-echo "  Database: /firebird/data/${FIREBIRD_DATABASE:-pirajanet.fdb}"
+echo "  Database: /firebird/data/${FIREBIRD_DATABASE:-vecta.fdb}"
 echo "  User: $CUSTOM_USER ou SYSDBA"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
