@@ -9,6 +9,7 @@ services:
       - ISC_PASSWORD=${FIREBIRD_PASSWORD:-masterkey}
       - FIREBIRD_DATABASE=${FIREBIRD_DATABASE:-nfautopecas.fdb}
       - FIREBIRD_USER=SYSDBA
+      - WireCrypt=Enabled
     ports:
       - "3050:3050"
     volumes:
