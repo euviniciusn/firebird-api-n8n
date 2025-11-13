@@ -166,7 +166,7 @@ app.post('/api/query', (req, res) => {
   });
 });
 
-// Endpoint para INSERT, UPDATE, DELETE
+// Endpoint para INSERT, UPDATE, DELETE, CREATE, DROP, ALTER
 app.post('/api/execute', (req, res) => {
   const { sql, params } = req.body;
 
@@ -181,11 +181,11 @@ app.post('/api/execute', (req, res) => {
   const allowedOperations = ['INSERT', 'UPDATE', 'DELETE', 'EXECUTE', 'CREATE', 'DROP', 'ALTER'];
   
   if (!allowedOperations.some(op => sqlUpper.startsWith(op))) {
-  return res.status(403).json({
-    status: 'ERROR',
-    message: 'Este endpoint aceita apenas comandos de modificação (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, EXECUTE). Use /api/query para SELECT.'
-  });
-}
+    return res.status(403).json({
+      status: 'ERROR',
+      message: 'Este endpoint aceita apenas INSERT, UPDATE, DELETE, CREATE, DROP, ALTER ou EXECUTE. Use /api/query para SELECT.'
+    });
+  }
 
   console.log(`⚙️ Executando comando: ${sql.substring(0, 100)}...`);
 
