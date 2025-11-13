@@ -2,25 +2,21 @@ version: '3.8'
 
 services:
   firebird:
-    image: jacobalberty/firebird:2.5-sc
+    image: jacobalberty/firebird:v3.0
     container_name: firebird-server
     restart: unless-stopped
     environment:
       - ISC_PASSWORD=${FIREBIRD_PASSWORD:-masterkey}
       - FIREBIRD_DATABASE=${FIREBIRD_DATABASE:-nfautopecas.fdb}
+      - EnableLegacyClientAuth=true
+      - EnableWireCrypt=false
     ports:
       - "3050:3050"
     volumes:
       - firebird-data:/firebird/data
-      - ./init-firebird.sh:/docker-entrypoint-initdb.d/init.sh:ro
+      - firebird-system:/firebird/system
     networks:
       - firebird-network
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep firebird || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
   firebird-api:
     build:
@@ -58,4 +54,6 @@ networks:
 
 volumes:
   firebird-data:
+    driver: local
+  firebird-system:
     driver: local
