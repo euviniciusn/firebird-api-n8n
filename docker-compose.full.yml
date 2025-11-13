@@ -25,10 +25,12 @@ services:
 
   # API REST
   firebird-api:
-    image: node:18-alpine
+    build:
+      context: https://github.com/euviniciusn/firebird-api-n8n.git#main
+      dockerfile: Dockerfile
+    image: firebird-api:latest
     container_name: firebird-api
     restart: unless-stopped
-    working_dir: /usr/src/app
     depends_on:
       firebird:
         condition: service_healthy
@@ -42,29 +44,16 @@ services:
       - DB_USER=${API_USER:-VECTA}
       - DB_PASSWORD=${API_PASSWORD:-vecta123}
       - API_PORT=3050
-      - GITHUB_REPO=https://raw.githubusercontent.com/SEU-USUARIO/firebird-api-n8n/main
     networks:
       - firebird-network
     volumes:
       - ./logs:/usr/src/app/logs
-    command: >
-      sh -c "
-      echo '🔧 Instalando ferramentas...' &&
-      apk add --no-cache wget curl &&
-      echo '📥 Baixando arquivos do GitHub...' &&
-      wget -q $$GITHUB_REPO/package.json -O package.json &&
-      wget -q $$GITHUB_REPO/server.js -O server.js &&
-      echo '📦 Instalando dependências...' &&
-      npm install --production &&
-      echo '🚀 Iniciando API...' &&
-      node server.js
-      "
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3050/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 40s
       
 networks:
   firebird-network:
