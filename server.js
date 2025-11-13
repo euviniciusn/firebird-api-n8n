@@ -189,7 +189,7 @@ app.post('/api/execute', (req, res) => {
 
   console.log(`⚙️ Executando comando: ${sql.substring(0, 100)}...`);
 
-  // Verificar se é comando DDL (não precisa commit)
+  // Verificar se é comando DDL (auto-commit)
   const isDDL = sqlUpper.startsWith('CREATE') || 
                 sqlUpper.startsWith('DROP') || 
                 sqlUpper.startsWith('ALTER');
@@ -204,21 +204,21 @@ app.post('/api/execute', (req, res) => {
       });
     }
 
-    db.query(sql, params || [], (err, result) => {
-      if (err) {
-        console.error('❌ Erro ao executar comando:', err.message);
+    // DDL: executa direto (auto-commit)
+    if (isDDL) {
+      db.query(sql, params || [], (err, result) => {
         db.detach();
-        return res.status(500).json({
-          status: 'ERROR',
-          message: 'Erro ao executar comando',
-          error: err.message,
-          sql: sql
-        });
-      }
+        
+        if (err) {
+          console.error('❌ Erro ao executar comando DDL:', err.message);
+          return res.status(500).json({
+            status: 'ERROR',
+            message: 'Erro ao executar comando',
+            error: err.message,
+            sql: sql
+          });
+        }
 
-      // DDL não precisa de commit (é auto-commit)
-      if (isDDL) {
-        db.detach();
         console.log('✅ Comando DDL executado com sucesso (auto-commit)');
         
         return res.json({
@@ -226,28 +226,56 @@ app.post('/api/execute', (req, res) => {
           message: 'Comando executado com sucesso',
           executedAt: new Date().toISOString()
         });
+      });
+      return;
+    }
+
+    // DML: usa transaction
+    db.transaction(Firebird.ISOLATION_READ_COMMITTED, (err, transaction) => {
+      if (err) {
+        console.error('❌ Erro ao iniciar transação:', err.message);
+        db.detach();
+        return res.status(500).json({
+          status: 'ERROR',
+          message: 'Erro ao iniciar transação',
+          error: err.message
+        });
       }
 
-      // DML precisa de commit
-      db.commit((commitErr) => {
-        db.detach();
-        
-        if (commitErr) {
-          console.error('❌ Erro ao fazer commit:', commitErr.message);
+      transaction.query(sql, params || [], (err, result) => {
+        if (err) {
+          console.error('❌ Erro ao executar comando DML:', err.message);
+          transaction.rollback(() => {
+            db.detach();
+          });
           return res.status(500).json({
             status: 'ERROR',
-            message: 'Erro ao fazer commit',
-            error: commitErr.message
+            message: 'Erro ao executar comando',
+            error: err.message,
+            sql: sql
           });
         }
 
-        console.log('✅ Comando DML executado e commitado com sucesso');
+        transaction.commit((commitErr) => {
+          db.detach();
+          
+          if (commitErr) {
+            console.error('❌ Erro ao fazer commit:', commitErr.message);
+            return res.status(500).json({
+              status: 'ERROR',
+              message: 'Erro ao fazer commit',
+              error: commitErr.message
+            });
+          }
 
-        res.json({
-          status: 'OK',
-          message: 'Comando executado com sucesso',
-          affectedRows: result ? (result.length || 1) : 1,
-          executedAt: new Date().toISOString()
+          console.log('✅ Comando DML executado e commitado com sucesso');
+
+          res.json({
+            status: 'OK',
+            message: 'Comando executado com sucesso',
+            affectedRows: result ? (result.length || 1) : 1,
+            executedAt: new Date().toISOString()
+          });
         });
       });
     });
