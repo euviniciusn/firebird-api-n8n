@@ -189,6 +189,11 @@ app.post('/api/execute', (req, res) => {
 
   console.log(`⚙️ Executando comando: ${sql.substring(0, 100)}...`);
 
+  // Verificar se é comando DDL (não precisa commit)
+  const isDDL = sqlUpper.startsWith('CREATE') || 
+                sqlUpper.startsWith('DROP') || 
+                sqlUpper.startsWith('ALTER');
+
   Firebird.attach(dbConfig, (err, db) => {
     if (err) {
       console.error('❌ Erro ao conectar:', err.message);
@@ -211,7 +216,19 @@ app.post('/api/execute', (req, res) => {
         });
       }
 
-      // Commit
+      // DDL não precisa de commit (é auto-commit)
+      if (isDDL) {
+        db.detach();
+        console.log('✅ Comando DDL executado com sucesso (auto-commit)');
+        
+        return res.json({
+          status: 'OK',
+          message: 'Comando executado com sucesso',
+          executedAt: new Date().toISOString()
+        });
+      }
+
+      // DML precisa de commit
       db.commit((commitErr) => {
         db.detach();
         
@@ -224,7 +241,7 @@ app.post('/api/execute', (req, res) => {
           });
         }
 
-        console.log('✅ Comando executado e commitado com sucesso');
+        console.log('✅ Comando DML executado e commitado com sucesso');
 
         res.json({
           status: 'OK',
