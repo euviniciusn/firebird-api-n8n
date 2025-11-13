@@ -2,19 +2,16 @@ version: '3.8'
 
 services:
   firebird:
-    image: jacobalberty/firebird:latest
+    image: jacobalberty/firebird:2.5-sc
     container_name: firebird-server
     restart: unless-stopped
     environment:
       - ISC_PASSWORD=${FIREBIRD_PASSWORD:-masterkey}
       - FIREBIRD_DATABASE=${FIREBIRD_DATABASE:-nfautopecas.fdb}
-      - FIREBIRD_USER=SYSDBA
-      - WireCrypt=Enabled
     ports:
       - "3050:3050"
     volumes:
       - firebird-data:/firebird/data
-      - firebird-system:/firebird/system
       - ./init-firebird.sh:/docker-entrypoint-initdb.d/init.sh:ro
     networks:
       - firebird-network
@@ -61,6 +58,4 @@ networks:
 
 volumes:
   firebird-data:
-    driver: local
-  firebird-system:
     driver: local
