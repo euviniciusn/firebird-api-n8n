@@ -34,8 +34,8 @@ services:
       - DB_HOST=firebird
       - DB_PORT=3050
       - DB_PATH=/firebird/data/${FIREBIRD_DATABASE:-nfautopecas.fdb}
-      - DB_USER=${API_USER:-VECTA}
-      - DB_PASSWORD=${API_PASSWORD:-vecta123}
+      - DB_USER=${API_USER:-SYSDBA}
+      - DB_PASSWORD=${API_PASSWORD:-Master2025}
       - API_PORT=3050
     networks:
       - firebird-network
