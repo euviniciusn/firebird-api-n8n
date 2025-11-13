@@ -1,34 +1,23 @@
 FROM node:18-alpine
 
-# Metadados
-LABEL maintainer="PirajaNet"
-LABEL description="API REST Firebird para n8n"
-
 # Instalar dependências do sistema
-RUN apk add --no-cache \
-    bash \
-    wget \
-    curl
+RUN apk add --no-cache bash wget curl
 
 # Criar diretório da aplicação
 WORKDIR /usr/src/app
 
-# Copiar arquivos de dependências
-COPY package*.json ./
+# Copiar package.json
+COPY package.json ./
 
-# Instalar dependências do Node
-RUN npm ci --only=production && \
+# Instalar dependências
+RUN npm install --production && \
     npm cache clean --force
 
-# Copiar código da aplicação
-COPY server.js .
+# Copiar código
+COPY server.js ./
 
 # Criar diretório de logs
-RUN mkdir -p /usr/src/app/logs && \
-    chown -R node:node /usr/src/app
-
-# Usar usuário não-root
-USER node
+RUN mkdir -p /usr/src/app/logs
 
 # Expor porta
 EXPOSE 3050
