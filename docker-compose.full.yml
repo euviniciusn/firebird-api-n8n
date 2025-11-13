@@ -1,29 +1,29 @@
 version: '3.8'
 
 services:
-  # Servidor Firebird
   firebird:
     image: jacobalberty/firebird:latest
     container_name: firebird-server
     restart: unless-stopped
     environment:
       - ISC_PASSWORD=${FIREBIRD_PASSWORD:-masterkey}
-      - FIREBIRD_DATABASE=${FIREBIRD_DATABASE:-pirajanet.fdb}
-      - FIREBIRD_USER=${FIREBIRD_USER:-SYSDBA}
+      - FIREBIRD_DATABASE=${FIREBIRD_DATABASE:-nfautopecas.fdb}
+      - FIREBIRD_USER=SYSDBA
     ports:
       - "3050:3050"
     volumes:
       - firebird-data:/firebird/data
       - firebird-system:/firebird/system
+      - ./init-firebird.sh:/docker-entrypoint-initdb.d/init.sh:ro
     networks:
       - firebird-network
     healthcheck:
-      test: ["CMD-SHELL", "echo 'SELECT 1 FROM RDB$$DATABASE;' | /usr/local/firebird/bin/isql -user sysdba -password $${ISC_PASSWORD} localhost:employee"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pgrep firebird || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # API REST
   firebird-api:
     build:
       context: https://github.com/euviniciusn/firebird-api-n8n.git#main
@@ -32,8 +32,7 @@ services:
     container_name: firebird-api
     restart: unless-stopped
     depends_on:
-      firebird:
-        condition: service_healthy
+      - firebird
     ports:
       - "3051:3050"
     environment:
@@ -53,8 +52,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-      
+      start_period: 60s
+
 networks:
   firebird-network:
     driver: bridge
@@ -63,6 +62,4 @@ volumes:
   firebird-data:
     driver: local
   firebird-system:
-    driver: local
-  api-node-modules:
     driver: local
